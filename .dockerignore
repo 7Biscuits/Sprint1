@@ -1,0 +1,7 @@
+node_modules
+.git
+.env
+client/dist
+server/data/demo-cache
+*.log
+.DS_Store

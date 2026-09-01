@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --noEmit",
-    "start": "cross-env MARKET_MODE=cached SIGNALPROOF_CACHE_DIR=server/data/demo-cache node --import tsx src/index.ts",
+    "start": "node --import tsx src/index.ts",
+    "start:cached": "cross-env MARKET_MODE=cached SIGNALPROOF_CACHE_DIR=server/data/demo-cache node --import tsx src/index.ts",
     "start:live": "node --import tsx src/index.ts",
     "typecheck": "tsc --noEmit"
   },
