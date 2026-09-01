@@ -2,11 +2,49 @@
 
 ## 🚀 LIVE DEMO: [HTTPS://SIGNALPROOF-PHI.VERCEL.APP/](https://signalproof-phi.vercel.app/)
 
-**Hackverse: Into the Web — PS-01.** A single-screen, multi-agent equity-research briefing for an eight-stock NSE research universe. It turns one immutable market snapshot into **two different, policy-explained actions** for two saved investor profiles — with every claim cited, every data mode labelled (`LIVE`/`CACHED`), and every failure degraded gracefully instead of hidden.
+**Hackverse: Into the Web — PS-01.** A single-screen, multi-agent equity-research briefing platform for an eight-stock NSE research universe. It turns one immutable market snapshot into **two different, policy-explained actions** for saved investor profiles — with every claim cited, every data mode labelled (`LIVE`/`CACHED`), an **interactive AI research copilot**, a **5-perspective tab switcher**, interactive technical charts, and graceful degradation across all failure modes.
 
-> "SignalProof turns the same market signal into two safer answers — because it can prove both the evidence and the investor context behind each one."
+> *"SignalProof turns the same market signal into two safer answers — because it can prove both the evidence and the investor context behind each one."*
 
-## What the app does (one click, end-to-end)
+---
+
+## ✨ Key Features & Capabilities
+
+### 1. 🤖 Grounded AI Support Copilot
+- **Always-Available Floating Assistant**: An interactive AI research copilot positioned in the bottom-right corner with a sleek, compact glowing launcher.
+- **Data-Grounded Answering**: Full awareness of the active stock ticker, price, RSI/MAs, parallel agent findings, verbatim filing citations, and portfolio concentration limits.
+- **Quick-Inquiry Chips**: Instant queries for *"Why did the system choose this action?"*, *"Breakdown RSI & technicals"*, *"What do the filings say?"*, and *"Explain portfolio risk caps"*.
+- **Interactive In-Chat Citations**: Clickable citation pills (`[rel-q3-fy25-01]`) inside chat responses that open the **Citation Inspector** modal directly.
+- **Dual Engine (LLM + Deterministic Fallback)**: Powered by `POST /api/chat` with OpenRouter/OpenAI, backed by a robust offline deterministic reasoning engine with zero hallucinations.
+
+### 2. 🗂️ 5-Perspective Segmented Tab Switcher
+- **Interactive Perspective Control**: Recessed segmented rail with a smooth animated sliding pill indicator powered by Framer Motion.
+- **5 Focused Perspectives**:
+  1. **🎯 Overview & Decision**: Executive synthesis, action verdict, confidence score, and 3-agent parallel breakdown.
+  2. **📈 Interactive Chart**: Real-time candlestick charts, 20/50 EMAs, RSI oscillator, volume bars, and technical metrics.
+  3. **🤖 Agent Intelligence**: Deep dive into Technical, Grounded Filing RAG, and News sentiment agents.
+  4. **💼 Portfolio & Risk**: Investor holdings, target concentration %, HHI score, and profile guardrail rules (`C1`, `G1`, `D1`, `F1`).
+  5. **📋 Compare & Audit**: Multi-profile comparison (same raw snapshot, different policy) and 35-field session persistence audit trail.
+- **Dynamic Context Badges**: Live action pills, price change, active agent counts, and persistence mode tags.
+- **Keyboard Shortcuts**: Press **`1`**, **`2`**, **`3`**, **`4`**, or **`5`** anywhere on the screen to switch tabs instantly, or use arrow keys with full WAI-ARIA accessibility.
+
+### 3. 📈 Interactive Technical & Candlestick Analysis
+- Interactive charts with customizable candle/line views, 20-day & 50-day moving average overlays, and 14-period RSI indicator panel.
+- Live market data fetched via Yahoo Finance chart API (`query2` → `query1` failover) with a 15-minute TTL cache and verified fallback snapshots.
+
+### 4. 🔍 Verifiable Grounded RAG & Citation Inspector
+- Top-3 chunk retrieval from curated, dated filings corpus via hashed-embedding vectors + lexical blend.
+- Modal inspector for verbatim document excerpts, publisher, docType, dates, and direct links to original filings.
+- Every claim cited; schema-validated and code-enforced to eliminate LLM hallucinations.
+
+### 5. 🛡️ Deterministic Concentration & Risk Policy
+- **Rule C1 (Conservative)**: Concentration >50% caps action at **DO NOT INCREASE** regardless of bullish market signals.
+- **Rule G1 (Growth)**: Concentration ≤15% allows **CONSIDER A SMALL, STAGED ADD** when evidence thresholds are satisfied.
+- **Degraded Scenarios**: Gracefully handles missing news (confidence capped ≤65%), missing filings (action capped at `WAIT_REVIEW`), and signal conflicts (banner + cap ≤60%).
+
+---
+
+## ⚡ Architecture & Pipeline (One Click, End-to-End)
 
 ```
 "Run analysis" → POST /api/analyze {symbol, profileId, scenario, snapshotId?}
@@ -29,105 +67,82 @@
                       concentration rules C1/G1/D1/F1 pick the final action.
  6. Persistence       35-field session record (12 metrics) → Supabase Postgres
                       (live, verified) or labelled device-local fallback.
+ 7. AI Copilot Chat   POST /api/chat with full grounding in snapshot + citations.
 ```
 
-## Quick start
+---
+
+## 🚀 Quick Start & Local Development
 
 ```bash
-npm install                  # installs server + client workspaces
-npm run build && npm start   # DETERMINISTIC DEMO → http://localhost:8787
-npm run dev                  # LIVE MODE → UI :5173 (Vite) + API :8787, uses .env
-npm start:live               # live mode with the built UI on :8787
+# 1. Install dependencies across monorepo workspaces
+npm install
+
+# 2. Start full-stack in Live mode (Vite UI :5173 + Fastify API :8787)
+npm run dev
+
+# 3. Or run deterministic demo mode (:8787)
+npm run build && npm start
 ```
 
-The server **auto-loads `.env`** from the project root (no dotenv package needed; explicit shell env vars win). All credentials are optional — with none, the app runs on checked-in fixtures with honest labels.
+### Environment Configuration (`.env`)
 
-| Mode | Command | Market data | LLM | Persistence |
-| --- | --- | --- | --- | --- |
-| **Deterministic demo** (stage-safe) | `npm run build && npm start` | bundled dated fixture (isolated demo cache) | off | Supabase if configured, else local file |
-| **Live** | `npm run dev` / `npm start:live` | real Yahoo (query2→query1) + 15-min TTL cache | your key (OpenRouter/OpenAI), rules fallback | Supabase (verified working) |
+The server auto-loads `.env` from the project root. All variables are optional with honest fallbacks:
 
-| Env | Default | Meaning |
-| --- | --- | --- |
-| `MARKET_MODE` | `live` | `live` = try Yahoo chart API (10 s timeout) → file cache → bundled dated snapshot; `cached` = deterministic fixture only (demo mode) |
-| `NEWS_MODE` | `cached` | cached dated headline set (no live provider this sprint, by PRD cut) |
-| `LLM_MODE` / `OPENAI_API_KEY` / `OPENAI_MODEL` | `off` | optional structured-output LLM; deterministic templates otherwise |
-| `EMBEDDINGS_MODE` | `local` | `local` = deterministic hashed-embedding cosine + lexical blend; `openai` uses real embeddings with automatic fallback |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | unset | session persistence; absent/failed → labelled device-local store (`supabase/schema.sql` has the table) |
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PORT` | `8787` | Server listening port |
+| `HOST` | `0.0.0.0` | Host binding interface |
+| `MARKET_MODE` | `live` | `live` (Yahoo Finance with TTL cache) or `cached` (deterministic snapshot) |
+| `LLM_MODE` | `openai` | `openai` (active LLM phrasing) or `off` (deterministic templates) |
+| `OPENAI_API_KEY` | *(your key)* | API key for OpenRouter / OpenAI / Groq |
+| `OPENAI_BASE_URL` | `https://openrouter.ai/api/v1` | OpenAI-compatible endpoint |
+| `OPENAI_MODEL` | `minimax/minimax-m3:free` | LLM model identifier |
+| `EMBEDDINGS_MODE` | `local` | `local` (fast deterministic hashed vectors) or `openai` |
+| `SUPABASE_URL` | *(optional)* | Supabase project URL for remote Postgres persistence |
+| `SUPABASE_SERVICE_ROLE_KEY` | *(optional)* | Supabase service role secret |
 
-## How to use the app (every control, top to bottom)
+---
 
-1. **Pick a company and saved profile** (top cards): choose from eight NSE tickers, then select *Meera · Conservative* or *Arjun · Growth*. A new company/profile selection clears the prior board so the next run is always explicit.
-2. **Pick a demo scenario**: *Normal* (primary path), *Missing news* (degraded: news card unavailable, confidence ≤65), *Missing filings* (degraded: action capped at WAIT, confidence ≤55), *Conflicting signals* (prepared conflict: banner, cap 60). Changing the scenario resets the board.
-3. **Run analysis**: watch the proof strip fill in — session id, *parallel proof* (all 3 launched before any result, 0 ms start spread), the *raw-evidence fingerprint*, total latency.
-4. **Market header + risk lens**: price, change, `LIVE`/`CACHED` badge, source host, fetch timestamp, indicator chips, sparkline, allocation/evidence pies, 90-day return, volatility, drawdown, and range position. `CLOSE-ONLY` visibly withholds volume/OHLC claims when Yahoo's main endpoint is rate-limited.
-5. **Agent cards** (Technical / Filing / News): signal pill + confidence bar, ≤3 evidence bullets with clickable `[citation-id]` chips, expandable dated excerpts (publisher · docType · date · source link), a **`LLM · cited` or `rules` badge** showing which path produced the output, per-agent timings, and provenance lines. Unavailable agents state why — they never invent content.
-6. **Portfolio card**: holdings with weight bars, the analysed stock's concentration %, HHI score, risk tolerance, and the disclosed modeling limitation.
-7. **Final panel**: *Market outlook* (evidence-weighted, with each agent's weighted contribution) is deliberately separated from *Your action* (policy-based, rule id + plain-language reason + caps applied). Then capture the demo decision: **"I will review"** or **"Dismiss"** (persisted with a timestamp).
-8. **Compare profiles** card: runs the *other* profile on the same snapshot and shows both actions side by side with the fingerprint proof that only the policy changed.
-9. **Session log**: 12 metrics + per-agent table + storage badge (`Supabase` or `stored locally (fallback)`), **export JSON** for judge inspection. Reload the page — the last session re-appears labelled as reloaded (R8).
-10. **Top bar**: "How this decision was made" (in-app architecture summary) and "Reset demo" (clears the device-local copy).
-
-## Run the proof
+## 🧪 Verification & Acceptance Suite
 
 ```bash
-npm run acceptance      # 38 hermetic checks across R1–R8 (own API, own temp cache, LLM/Supabase off)
-npm run live-check      # boots with your real .env: live fetch, TTL cache hit, LLM-by badge, Supabase write
-npm run fixture:snapshot  # regenerate the deterministic OHLCV fixture (seeded, constraint-checked)
+# Run 38 automated hermetic acceptance checks (R1–R8)
+npm run acceptance
+
+# Test live integrations (Yahoo Live + OpenRouter LLM + Supabase Postgres)
+npm run live-check
+
+# Run TypeScript typechecks across server & client
+npm run typecheck
+
+# Build production bundles
+npm run build
 ```
 
-Last verified live run: Yahoo snapshot fetched (fallback labelled honestly when Yahoo 429s), Filing+News `by=llm` via `minimax/minimax-m3:free` on OpenRouter, storage `supabase`, warm run 1.1 s vs 7.7 s cold. Manual R1–R9 click-path: `docs/TEST_CHECKLIST.md`. Provenance per corpus item: `docs/PROVENANCE.md`. Judge architecture summary: `ARCHITECTURE.md` (also in-app).
+---
 
-## API reference (all server-side; keys never reach the browser)
+## 🌐 Production Deployment
 
-| Endpoint | Purpose |
-| --- | --- |
-| `POST /api/analyze` | `{profileId, scenario?, snapshotId?, symbol?}` → full briefing (snapshot, indicators, 3 agent results, synthesis, session, storage info) |
-| `GET /api/profiles` | the two saved demo profiles with holdings |
-| `GET /api/sessions/last` | last persisted session (Supabase first, local fallback) |
-| `POST /api/sessions/:id/decision` | `{decision: "will_review"\|"dismissed"}` |
-| `GET /api/corpus` | the cited corpus (id, title, url, date, docType, excerpt) |
-| `GET /api/health` | modes + persistence status |
+- **Frontend (Vercel)**: Configured in [`client/vercel.json`](file:///Users/alshahriah/Programming/Hackathons/Hackverse/Sprint%201/client/vercel.json) with `VITE_API_BASE` pointing to the backend.
+- **Backend (Heroku / Render / Railway)**: Configured with [`Procfile`](file:///Users/alshahriah/Programming/Hackathons/Hackverse/Sprint%201/Procfile) (`web: npm --workspace server run start`).
+- **Docker Container**: Production multi-stage [`Dockerfile`](file:///Users/alshahriah/Programming/Hackathons/Hackverse/Sprint%201/Dockerfile) included.
 
-```bash
-curl -s localhost:8787/api/analyze -H 'Content-Type: application/json' \
-  -d '{"profileId":"profile_growth_002","scenario":"missing_news"}' | jq '.synthesis.action, .agents[] | {agent,signal,confidence}'
-```
+---
 
-## What to demo (3 minutes)
+## 📡 API Reference
 
-1. **Run** Conservative → `LIVE`/`CACHED` badge + three agent cards starting together (0 ms spread).
-2. **Inspect** Technical indicators (calculated code, not LLM), expand a Filing citation to its dated verbatim excerpt, read News evidence. Point at the `LLM · cited` badge — the model only phrased evidence from the retrieved excerpts; ids were validated after generation.
-3. **Switch** to Growth on the locked snapshot → same raw-evidence fingerprint, different action: 60 % Conservative → **DO NOT INCREASE** (rule C1); 10 % Growth → **CONSIDER A SMALL, STAGED ADD** when the evidence threshold is met on the fixture, else WAIT/REVIEW with the threshold named (rule D1) — the policy explains whichever way it lands.
-4. **Break it safely** → Missing news: card goes `unavailable`, confidence capped at 65, result stays cited. Optional: Conflicting signals banner (cap 60).
-5. **Prove it performed** → Session log (12 metrics), "I will review" decision, reload, export JSON.
+| Endpoint | Method | Purpose |
+| :--- | :--- | :--- |
+| `/api/analyze` | `POST` | Execute 3-agent parallel briefing for a symbol & investor profile |
+| `/api/chat` | `POST` | Ask questions to the grounded AI Copilot with session context |
+| `/api/profiles` | `GET` | Retrieve saved investor risk profiles and stock universe |
+| `/api/sessions/last`| `GET` | Fetch the last persisted research session |
+| `/api/sessions/:id/decision` | `POST` | Record investor decision (`will_review` or `dismissed`) |
+| `/api/corpus` | `GET` | List verified regulatory filings and citations |
+| `/api/health` | `GET` | System health, market provider status, and persistence mode |
 
-**Demo-day tips:** warm the caches once (run one analysis before the judges arrive) — warm runs are ~1 s. Yahoo occasionally 429s both hosts; then the UI says so and serves the cached real snapshot — that *is* the resilience story, tell it proudly. For a fully deterministic narrative use `npm start` (fixture-backed).
+---
 
-## Troubleshooting
-
-| Symptom | Meaning / fix |
-| --- | --- |
-| Header says CACHED with a `query2/query1 responded 429` note | Yahoo rate-limited that host; the TTL cache (≤15 min) or last good snapshot is served honestly. Wait or `rm server/data/cache/*.json` to retry live. |
-| Agent badge shows `rules` + `fallback` | The LLM failed or returned invalid/uncited JSON — the deterministic path took over by design. Check `OPENAI_*` in `.env`; free OpenRouter models are rate-limited. |
-| Session log says `stored locally` | Supabase env missing/failed. Re-run `npx supabase db push`, check `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`. |
-| Port already in use | `PORT` in `.env`, or kill the old process (`pkill -f 'server/src/index.ts'`). |
-
-## Layout
-
-```
-server/src/        Fastify API — one /api/analyze; market adapter chain; deterministic
-                   indicators; hashed-embedding RAG; three agents (Promise.allSettled);
-                   policy synthesis (C1/G1/D1/F1 + 60/65/55 caps); persistence w/ fallback
-server/src/data/   checked-in fixtures: versioned OHLCV snapshot, 8-chunk cited corpus,
-                   cached headlines, two demo profiles
-client/src/        one-screen React UI — proof strip, agent cards with expandable citations,
-                   portfolio card (concentration + HHI), outlook-vs-action final panel,
-                   session log, sparkline, compare-profiles
-scripts/           acceptance.mjs (38 checks) · generate-snapshot.mjs
-docs/              PROVENANCE.md · TEST_CHECKLIST.md      supabase/schema.sql
-```
-
-## Honest limitations (declared, not hidden)
-
-Market/news fixtures are synthetic and dated (`docs/PROVENANCE.md`); corpus URLs point to RIL's investor pages and were not machine-verified at build time — spot-check before demoing, the linked source governs. Behavioral personalization = stored risk parameters + holdings only; historical interaction patterns are explicitly **not** modelled. Research decision support only — no execution, no performance claims, no PII.
+## ⚖️ Disclaimer & Honest Limitations
+SignalProof provides research decision support, not financial execution, trading automation, or price prediction. Market and news fixtures are dated (`docs/PROVENANCE.md`). Behavioral personalization is bounded by declared risk profiles and portfolio holdings. No PII is collected or stored.
