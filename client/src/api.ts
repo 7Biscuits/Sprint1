@@ -1,6 +1,6 @@
 import type { AnalyzeResponse, Decision, SessionRecord } from "./types";
 
-const API = import.meta.env.VITE_API_BASE ?? "";
+const API = (import.meta.env.VITE_API_BASE ?? "").replace(/\/+$/, "");
 const LAST_KEY = "signalproof.lastSession.v1";
 
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
