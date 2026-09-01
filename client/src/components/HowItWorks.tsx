@@ -103,15 +103,17 @@ export function HowItWorks({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
 
         {/* Tab Navigation */}
-        <div className="mt-4 flex flex-wrap gap-1.5 border-b border-slate-800/80 pb-3">
+        <div role="tablist" aria-label="System Architecture Steps" className="mt-4 flex flex-wrap gap-1.5 border-b border-slate-800/80 pb-3">
           {SECTIONS.map((s) => (
             <button
               key={s.id}
+              role="tab"
+              aria-selected={activeTab === s.id}
               onClick={() => setActiveTab(s.id)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+              className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                 activeTab === s.id
                   ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
-                  : "bg-slate-950/50 text-slate-400 border border-slate-800 hover:text-slate-200"
+                  : "bg-slate-950/50 text-slate-400 border border-slate-800 hover:border-slate-700 hover:bg-slate-900/60 hover:text-slate-200"
               }`}
             >
               <span>{s.icon}</span>

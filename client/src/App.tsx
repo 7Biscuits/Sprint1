@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { api, localStore } from "./api";
 import type { AnalyzeResponse, Citation, Decision, Profile, Scenario, Stock } from "./types";
 import { Controls } from "./components/Controls";
@@ -12,18 +13,10 @@ import { SessionPanel } from "./components/SessionPanel";
 import { HowItWorks } from "./components/HowItWorks";
 import { AgentRunningVisualizer } from "./components/AgentRunningVisualizer";
 import { CitationModal } from "./components/CitationModal";
+import { TabSwitcher, type TabId } from "./components/TabSwitcher";
 import { Badge, Card } from "./components/ui";
 
 type Phase = "idle" | "running" | "done" | "error";
-type Tab = "overview" | "chart" | "agents" | "portfolio" | "audit";
-
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "overview", label: "Overview & Decision", icon: "🎯" },
-  { id: "chart", label: "Interactive Chart", icon: "📈" },
-  { id: "agents", label: "Agent Intelligence", icon: "🤖" },
-  { id: "portfolio", label: "Portfolio & Risk", icon: "💼" },
-  { id: "audit", label: "Compare & Audit", icon: "📋" },
-];
 
 export default function App() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -32,7 +25,7 @@ export default function App() {
   const [profileId, setProfileId] = useState("profile_conservative_001");
   const [scenario, setScenario] = useState<Scenario>("normal");
   const [phase, setPhase] = useState<Phase>("idle");
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
@@ -295,92 +288,94 @@ export default function App() {
               </div>
             </div>
 
-            {/* Segmented Tab Navigation Switcher */}
-            <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-zinc-800 bg-zinc-950/90 p-1.5 shadow-lg">
-              {TABS.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 ${
-                      isActive
-                        ? "bg-white text-black shadow-md shadow-white/10"
-                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
-                    }`}
-                  >
-                    <span>{tab.icon}</span>
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* Dynamic Interactive Tab Switcher */}
+            <TabSwitcher
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              result={result}
+              profile={profile}
+            />
 
-            {/* Tab 1: Overview & Decision */}
-            {activeTab === "overview" && (
-              <div className="space-y-4">
-                <FinalPanel
-                  r={result}
-                  decision={decision}
-                  decisionStatus={decisionStatus}
-                  onDecide={onDecide}
-                />
-                <div className="grid gap-4 md:grid-cols-3">
-                  {result.agents.map((a) => (
-                    <AgentCard
-                      key={a.agent}
-                      a={a}
-                      onCitationInspect={(c) => setInspectCitation(c)}
+            {/* Tab Panels with Smooth Motion Transitions */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                role="tabpanel"
+                id={`tabpanel-${activeTab}`}
+                aria-labelledby={`tab-${activeTab}`}
+                className="space-y-4 focus:outline-none"
+              >
+                {/* Tab 1: Overview & Decision */}
+                {activeTab === "overview" && (
+                  <div className="space-y-4">
+                    <FinalPanel
+                      r={result}
+                      decision={decision}
+                      decisionStatus={decisionStatus}
+                      onDecide={onDecide}
                     />
-                  ))}
-                </div>
-              </div>
-            )}
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {result.agents.map((a) => (
+                        <AgentCard
+                          key={a.agent}
+                          a={a}
+                          onCitationInspect={(c) => setInspectCitation(c)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Tab 2: Interactive Chart & Technicals */}
-            {activeTab === "chart" && (
-              <div className="space-y-4">
-                <MarketHeader r={result} showChartDefault={true} />
-                <AnalyticsPanel r={result} />
-              </div>
-            )}
+                {/* Tab 2: Interactive Chart & Technicals */}
+                {activeTab === "chart" && (
+                  <div className="space-y-4">
+                    <MarketHeader r={result} showChartDefault={true} />
+                    <AnalyticsPanel r={result} />
+                  </div>
+                )}
 
-            {/* Tab 3: Agent Intelligence */}
-            {activeTab === "agents" && (
-              <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
-                  {result.agents.map((a) => (
-                    <AgentCard
-                      key={a.agent}
-                      a={a}
-                      onCitationInspect={(c) => setInspectCitation(c)}
+                {/* Tab 3: Agent Intelligence */}
+                {activeTab === "agents" && (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {result.agents.map((a) => (
+                        <AgentCard
+                          key={a.agent}
+                          a={a}
+                          onCitationInspect={(c) => setInspectCitation(c)}
+                        />
+                      ))}
+                    </div>
+                    <AnalyticsPanel r={result} />
+                  </div>
+                )}
+
+                {/* Tab 4: Portfolio & Risk */}
+                {activeTab === "portfolio" && (
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    <div className="lg:col-span-2">
+                      <PortfolioCard profile={profile} r={result} />
+                    </div>
+                    <AnalyticsPanel r={result} />
+                  </div>
+                )}
+
+                {/* Tab 5: Compare & Audit */}
+                {activeTab === "audit" && (
+                  <div className="space-y-4">
+                    <ComparePanel primary={result} />
+                    <SessionPanel
+                      session={result.session}
+                      storageLabel={result.storage.label}
                     />
-                  ))}
-                </div>
-                <AnalyticsPanel r={result} />
-              </div>
-            )}
-
-            {/* Tab 4: Portfolio & Risk */}
-            {activeTab === "portfolio" && (
-              <div className="grid gap-4 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                  <PortfolioCard profile={profile} r={result} />
-                </div>
-                <AnalyticsPanel r={result} />
-              </div>
-            )}
-
-            {/* Tab 5: Compare & Audit */}
-            {activeTab === "audit" && (
-              <div className="space-y-4">
-                <ComparePanel primary={result} />
-                <SessionPanel
-                  session={result.session}
-                  storageLabel={result.storage.label}
-                />
-              </div>
-            )}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         )}
 
