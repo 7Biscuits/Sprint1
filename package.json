@@ -1,0 +1,31 @@
+{
+  "name": "signalproof",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SignalProof — multi-agent, cited, profile-personalized equity research briefing (Hackverse PS-01)",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm --workspace server run dev\" \"npm --workspace client run dev\"",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "build": "npm --workspace server run build && npm --workspace client run build",
+    "start": "npm --workspace server run start",
+    "typecheck": "npm --workspace server run typecheck && npm --workspace client run typecheck",
+    "acceptance": "node scripts/acceptance.mjs",
+    "live-check": "node scripts/live-check.mjs",
+    "fixture:snapshot": "node scripts/generate-snapshot.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true
+  }
+}

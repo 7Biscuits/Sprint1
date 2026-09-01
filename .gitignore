@@ -1,0 +1,10 @@
+node_modules/
+dist/
+server/data/cache/
+server/data/demo-cache/
+server/data/local-sessions.json
+server/server/
+*.tsbuildinfo
+.env
+*.log
+.DS_Store

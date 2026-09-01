@@ -1,0 +1,76 @@
+IEEE Robo cs & Automa on Society · VIT Chennai Student Chapter
+HACKVERSE: INTO THE WEB
+Sprint 1 – Rapid Vibe Coding
+24-Hour Hackathon · VIT Chennai · 2026
+PS-01 — Mul -Agent Autonomous Financial Intelligence System for Retail Investors
+Problem Statement Design a mul -agent AI system that converts real- me market data,
+regulatory filings, and behavioral signals into explainable, personalized investment
+intelligence for retail investors — bridging the gap between raw financial data and
+ac onable decision-making. The system should not just surface what is happening in the
+market, but reason about what it means for a specific user's financial posi on, and be able
+to jus fy that reasoning transparently at every step.
+Context India's retail investment ecosystem does not fail because data is unavailable — NSE
+price feeds, SEBI corporate filings, FII flow disclosures, earnings transcripts, and op ons
+chain data are all publicly accessible. It fails in the gap between data availability and decision
+intelligence: conver ng a con nuous stream of market events into guidance that is mely,
+personalized, explainable, and safe to act on for an investor who has no professional
+research infrastructure behind them.
+SEBI's own 2024 data confirms that 89% of retail F&O par cipants in India lose money. India
+added 130 million new retail investors in four years, 80% of them under 30. A hedge fund
+deploys parallel analyst teams running simultaneous research across fundamentals,
+technicals, sen ment, and macro before commi ng to a posi on. A retail investor gets a
+price chart and a Telegram p. This informa on asymmetry is not a knowledge gap — it is an
+infrastructure gap. No single exis ng tool assembles public financial data into a coordinated,
+reasoned, mul -perspec ve research output accessible to a first- me investor in under 60
+seconds.
+Most systems built in this space solve one slice of the problem well. Signal screeners detect
+price anomalies. News aggregators surface headlines. Por olio trackers record holdings.
+What is rarer is the connec ve ssue between them — an orchestrated reasoning layer that
+pulls from mul ple data sources simultaneously, weights outputs against a specific user's
+risk profile and behavioral history, produces a synthesized and cited recommenda on, and
+can jus fy its logic to a human observer at any point in the session. This gap ma ers more as
+retail par cipa on deepens into deriva ve and mid-cap markets, where the cost of an
+unexplained wrong decision is measured in real capital loss rather than a failed simula on
+run.
+Dependencies
+ A live or simulated market data source providing real- me or near-real- me price,
+volume, and technical indicator feeds for listed equi es.
+ A document corpus of regulatory and financial disclosures (e.g. SEBI filings, earnings
+transcripts, or equivalent synthe c documents) suitable for seman c retrieval
+ A vector database or seman c search layer capable of retrieving contextually
+relevant document chunks given a natural language query
+ A mul -agent orchestra on framework capable of dispatching parallel reasoning
+tasks and synthesizing outputs from mul ple independent agents
+ A user behavioral profiling mechanism to capture risk preference, porcomposi on, and historical interac on pa erns
+ olio
+ A visualiza on or interface layer capable of rendering live signal outputs, agent
+reasoning traces, and por olio state in real or near-real me
+ A logging and persistence mechanism to store agent outputs, user decisions, and
+performance metrics across sessions
+Minimum Requirements
+ A signal classifica on module that evaluates market data across at least three
+independent dimensions (e.g. price momentum, volume anomaly, sen ment) and
+produces a classified output with a stated confidence level and cited reasoning
+ A retrieval-augmented genera on component that queries a document corpus and
+grounds at least one agent output in retrieved source material, with a ribu on
+visible to the user
+ A mul -agent architecture in which at least three specialized agents execute in
+parallel, each with a defined role and structured output contract consumed by a
+synthesis layer
+ A user profiling component that modifies agent outputs based on individually stored
+risk parameters or behavioral history, demonstrably producing diﬀerent outputs for
+diﬀerent user profiles on iden cal market inputs
+ A live interface rendering at minimum: current market signals with classifica on
+labels, synthesized agent output with source a ribu on, and current user por olio
+or watchlist state
+ A performance log capturing at least three measurable metrics per session (e.g.
+signal accuracy against 30-day forward return, agent response latency, por olio risk
+concentra on score)
+ At least one working end-to-end demo scenario from raw data inges on through
+mul -agent reasoning to a user-facing recommenda on, with the full reasoning chain
+visible
+ Graceful handling of at least one degraded-data scenario (e.g. an unavailable data
+feed, a missing filing, or a conflic ng signal from two agents) without the pipeline
+failing or producing an uncited output
+ A brief written summary of the agent architecture and decision logic used, for judges
+to review alongside the demo
