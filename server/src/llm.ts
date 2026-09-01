@@ -92,6 +92,20 @@ export async function llmJson(system: string, user: string): Promise<unknown | n
   return parsed;
 }
 
+/** Free-form grounded text chat completion for copilot support. */
+export async function llmTextChat(
+  system: string,
+  history: { role: "user" | "assistant"; content: string }[],
+): Promise<string | null> {
+  if (config.llm.mode !== "openai" || !config.llm.apiKey) return null;
+  const messages = [
+    { role: "system", content: system },
+    ...history,
+  ];
+  const attempt = await chatOnce(messages, false);
+  return attempt.ok && attempt.content ? attempt.content : null;
+}
+
 // ── Shared guard: sanitize + validate a model's agent output against the
 //    citation contract. Anything that fails becomes null → deterministic
 //    fallback (PRD: schema validation & citation linking are code-enforced). ──

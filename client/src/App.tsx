@@ -14,6 +14,7 @@ import { HowItWorks } from "./components/HowItWorks";
 import { AgentRunningVisualizer } from "./components/AgentRunningVisualizer";
 import { CitationModal } from "./components/CitationModal";
 import { TabSwitcher, type TabId } from "./components/TabSwitcher";
+import { SupportChatbot } from "./components/SupportChatbot";
 import { Badge, Card } from "./components/ui";
 
 type Phase = "idle" | "running" | "done" | "error";
@@ -398,12 +399,19 @@ export default function App() {
         </footer>
       </main>
 
-      {/* Global Modals */}
+      {/* Global Modals & AI Copilot */}
       <HowItWorks open={showHow} onClose={() => setShowHow(false)} />
       <CitationModal
         citation={inspectCitation}
         claims={result?.agents.flatMap((a) => a.claims ?? [])}
         onClose={() => setInspectCitation(null)}
+      />
+      <SupportChatbot
+        result={result}
+        profile={profile}
+        symbol={symbol}
+        scenario={scenario}
+        onCitationInspect={(c) => setInspectCitation(c)}
       />
     </div>
   );

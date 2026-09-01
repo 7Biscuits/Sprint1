@@ -27,6 +27,22 @@ export const api = {
       `/api/sessions/${sessionId}/decision`,
       { method: "POST", body: JSON.stringify({ decision }) },
     ),
+  chat: (body: {
+    message: string;
+    history?: { role: "user" | "assistant"; content: string }[];
+    context?: {
+      result?: AnalyzeResponse | null;
+      profile?: import("./types").Profile | null;
+      symbol?: string;
+      scenario?: string;
+    };
+  }) =>
+    jsonFetch<{
+      reply: string;
+      generatedBy: "llm" | "deterministic";
+      suggestions: string[];
+      citations?: import("./types").Citation[];
+    }>("/api/chat", { method: "POST", body: JSON.stringify(body) }),
 };
 
 /** Device-local fallback cache: the reload-proof backup when the server is unreachable. */

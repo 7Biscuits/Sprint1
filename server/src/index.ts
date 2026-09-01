@@ -11,6 +11,7 @@ import { getLastSession } from "./persistence.js";
 import { CORPUS, CORPUS_VERSION } from "./data/corpus.js";
 import { config } from "./config.js";
 import { STOCK_UNIVERSE, SUPPORTED_SYMBOLS } from "./data/universe.js";
+import { handleChat, type ChatRequest } from "./chat.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = Fastify({ logger: { level: "warn" }, bodyLimit: 1_000_000 });
@@ -87,6 +88,19 @@ app.post("/api/sessions/:sessionId/decision", async (request, reply) => {
   const { record, storage } = await decide(sessionId, decision);
   if (!record) return reply.code(404).send({ error: `Unknown session: ${sessionId}` });
   return { session: record, storage };
+});
+
+app.post("/api/chat", async (request, reply) => {
+  const body = request.body as ChatRequest;
+  if (!body || typeof body.message !== "string" || !body.message.trim()) {
+    return reply.code(400).send({ error: "message is required" });
+  }
+  try {
+    return await handleChat(body);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "Chat failed";
+    return reply.code(500).send({ error: "Chat service error", detail });
+  }
 });
 
 // Serve the built client when present (single-command demo mode).
