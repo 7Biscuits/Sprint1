@@ -160,6 +160,14 @@ export interface AnalyzeResponse {
     changePct: number;
     pointCount: number;
     closesPreview: number[];
+    points?: {
+      date: string;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+    }[];
     liveAttempted: boolean;
     liveError?: string;
     cacheHit?: boolean;

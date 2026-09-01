@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, localStore } from "./api";
-import type { AnalyzeResponse, Decision, Profile, Scenario, Stock } from "./types";
+import type { AnalyzeResponse, Citation, Decision, Profile, Scenario, Stock } from "./types";
 import { Controls } from "./components/Controls";
 import { MarketHeader } from "./components/MarketHeader";
 import { AgentCard } from "./components/AgentCard";
@@ -10,9 +10,20 @@ import { FinalPanel } from "./components/FinalPanel";
 import { ComparePanel } from "./components/ComparePanel";
 import { SessionPanel } from "./components/SessionPanel";
 import { HowItWorks } from "./components/HowItWorks";
+import { AgentRunningVisualizer } from "./components/AgentRunningVisualizer";
+import { CitationModal } from "./components/CitationModal";
 import { Badge, Card } from "./components/ui";
 
 type Phase = "idle" | "running" | "done" | "error";
+type Tab = "overview" | "chart" | "agents" | "portfolio" | "audit";
+
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: "overview", label: "Overview & Decision", icon: "🎯" },
+  { id: "chart", label: "Interactive Chart", icon: "📈" },
+  { id: "agents", label: "Agent Intelligence", icon: "🤖" },
+  { id: "portfolio", label: "Portfolio & Risk", icon: "💼" },
+  { id: "audit", label: "Compare & Audit", icon: "📋" },
+];
 
 export default function App() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -21,14 +32,23 @@ export default function App() {
   const [profileId, setProfileId] = useState("profile_conservative_001");
   const [scenario, setScenario] = useState<Scenario>("normal");
   const [phase, setPhase] = useState<Phase>("idle");
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [decisionStatus, setDecisionStatus] = useState<string | null>(null);
   const [showHow, setShowHow] = useState(false);
-  const [meta, setMeta] = useState<{ llmMode: string; marketMode: string } | null>(null);
-  const [lastSession, setLastSession] = useState<{ session: import("./types").SessionRecord; storage: { mode: string; label: string } } | null>(null);
+  const [inspectCitation, setInspectCitation] = useState<Citation | null>(null);
+  const [meta, setMeta] = useState<{
+    llmMode: string;
+    marketMode: string;
+    persistenceConfigured: boolean;
+  } | null>(null);
+  const [lastSession, setLastSession] = useState<{
+    session: import("./types").SessionRecord;
+    storage: { mode: string; label: string };
+  } | null>(null);
 
   const profile = profiles.find((p) => p.id === profileId) ?? profiles[0];
 
@@ -50,18 +70,24 @@ export default function App() {
           setProfileId(local.result.session.profile_id);
         }
       });
+
     api
       .health()
-      .then((h) => setMeta({ llmMode: h.llmMode, marketMode: h.marketMode }))
+      .then((h) =>
+        setMeta({
+          llmMode: h.llmMode,
+          marketMode: h.marketMode,
+          persistenceConfigured: h.persistenceConfigured,
+        })
+      )
       .catch(() => undefined);
-    // R8: a reload can show the last persisted session record.
+
     api
       .lastSession()
       .then(({ session, storage }) => {
         if (session) setLastSession({ session, storage });
       })
       .catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const run = useCallback(async () => {
@@ -86,6 +112,18 @@ export default function App() {
     }
   }, [profileId, scenario, symbol, result]);
 
+  // Keyboard shortcut listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && e.target === document.body && phase !== "running") {
+        e.preventDefault();
+        run();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [run, phase]);
+
   const onDecide = useCallback(
     async (d: Decision) => {
       if (!result) return;
@@ -93,13 +131,13 @@ export default function App() {
       try {
         const { session, storage } = await api.decide(result.sessionId, d);
         setDecisionStatus(
-          `saved (${storage.mode === "supabase" ? "Supabase" : "local fallback"}) at ${session.decision_at?.slice(11, 19)}`,
+          `Decision saved (${storage.mode === "supabase" ? "Supabase" : "Local store"}) at ${session.decision_at?.slice(11, 19)}`
         );
       } catch {
-        setDecisionStatus("decision shown locally — API unreachable");
+        setDecisionStatus("Decision recorded locally — API unreachable");
       }
     },
-    [result],
+    [result]
   );
 
   const resetDemo = useCallback(() => {
@@ -113,45 +151,72 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div>
-            <h1 className="text-lg font-black tracking-tight">
-              Signal<span className="text-sky-400">Proof</span>
-              <span className="ml-2 text-xs font-medium text-slate-400">personalized, cited equity research briefing</span>
-            </h1>
-            <p className="text-[11px] text-slate-500">
-              Hackverse PS-01 · one decision, three parallel agents, two investor profiles ·{" "}
-              {meta ? `market:${meta.marketMode} llm:${meta.llmMode}` : "connecting…"}
-            </p>
+    <div className="min-h-screen pb-16">
+      {/* Top CRED Navbar */}
+      <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-xs font-black text-black shadow-md">
+              SP
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-black tracking-tight text-white">
+                  Signal<span className="text-sky-400">Proof</span>
+                </h1>
+                <span className="rounded border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-zinc-400">
+                  PS-01
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-400">
+                Multi-agent cited equity research briefing
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex flex-wrap items-center gap-2">
+            {meta && (
+              <div className="hidden items-center gap-1.5 text-xs text-zinc-400 sm:flex">
+                <Badge tone={meta.marketMode === "live" ? "green" : "amber"} dot>
+                  MARKET: {meta.marketMode.toUpperCase()}
+                </Badge>
+                <Badge tone="violet">LLM: {meta.llmMode.toUpperCase()}</Badge>
+                <Badge tone={meta.persistenceConfigured ? "green" : "amber"} dot>
+                  {meta.persistenceConfigured ? "SUPABASE" : "LOCAL"}
+                </Badge>
+              </div>
+            )}
             <button
               onClick={() => setShowHow(true)}
-              className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-sky-500/60 hover:text-sky-300"
+              className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:border-zinc-500 hover:text-white"
             >
-              How this decision was made
+              How it works ↗
             </button>
-            <button onClick={resetDemo} className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200">
-              Reset demo
+            <button
+              onClick={resetDemo}
+              className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:border-zinc-700 hover:text-zinc-200"
+            >
+              Reset
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-3 px-4 py-4">
+      {/* Main Container */}
+      <main className="mx-auto max-w-7xl space-y-4 px-4 py-5 sm:px-6">
         {offlineNotice && (
-          <div className="rounded-xl border border-amber-600/60 bg-amber-500/10 px-4 py-2 text-xs text-amber-200" role="status">
+          <div className="rounded-xl border border-amber-600/50 bg-amber-500/10 p-3 text-xs text-amber-200" role="status">
             {offlineNotice}
           </div>
         )}
+
         {error && phase === "error" && (
-          <div className="rounded-xl border border-rose-700/60 bg-rose-500/10 px-4 py-2 text-xs text-rose-200" role="alert">
-            Analysis failed: {error} — no quote has been substituted from a different ticker. Try again when a same-symbol live or cached quote is available.
+          <div className="rounded-xl border border-rose-700/60 bg-rose-500/10 p-3 text-xs text-rose-200" role="alert">
+            <b className="uppercase">Analysis Error:</b> {error} — No quote has been substituted from a different ticker.
           </div>
         )}
 
+        {/* Modular Controls Bar */}
         <Controls
           profiles={profiles}
           stocks={stocks}
@@ -180,71 +245,171 @@ export default function App() {
           onRun={run}
         />
 
+        {/* Idle Landing State */}
         {phase === "idle" && (
-          <Card className="text-center text-sm text-slate-400">
-            <p className="py-8">
-              Choose a company and investor profile, then run an evidence-labelled briefing.<br />
-              <span className="text-[11px] text-slate-500">
-                Quotes are isolated by ticker. Company-specific evidence is only used where it is actually available; every data mode stays labelled.
-              </span>
-            </p>
-          </Card>
-        )}
-
-        {phase === "running" && (
-          <Card className="text-center text-sm text-slate-400" aria-live="polite">
-            <p className="py-8">
-              <span className="inline-block animate-pulse font-mono">launching technical + filing + news agents in parallel…</span>
-            </p>
-          </Card>
-        )}
-
-        {phase === "done" && result && profile && (
-          <>
-            <MarketHeader r={result} />
-
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-[10px] text-slate-400">
-              <Badge tone="sky">session {result.sessionId}</Badge>
-              <Badge tone={result.parallelProof.allStartedBeforeFirstResult ? "green" : "amber"}>
-                parallel proof: all 3 launched before first result · start spread {result.parallelProof.startSpreadMs} ms
-              </Badge>
-              <Badge tone="violet">raw-evidence fingerprint {result.rawSignalFingerprint}</Badge>
-              <Badge tone="slate">total {result.totalLatencyMs} ms</Badge>
-              <span className="ml-auto">same fingerprint across profiles ⇒ identical raw evidence (R5)</span>
-            </div>
-
-            <div className="grid gap-3 lg:grid-cols-3">
-              <div className="grid gap-3 md:grid-cols-2 lg:col-span-2 xl:grid-cols-3">
-                {result.agents.map((a) => (
-                  <AgentCard key={a.agent} a={a} />
-                ))}
+          <Card className="p-8 text-center">
+            <div className="mx-auto max-w-md space-y-3">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-lg">
+                ⚡
               </div>
-              <PortfolioCard profile={profile} r={result} />
+              <h3 className="text-sm font-bold text-zinc-100">
+                Ready for Multi-Agent Synthesis
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Select your company and investor profile, then launch parallel research across Technical, Filing RAG, and News agents.
+              </p>
+              <div className="pt-2">
+                <button
+                  onClick={run}
+                  className="cred-button-primary rounded-xl px-5 py-2 text-xs uppercase tracking-wider"
+                >
+                  Launch Briefing (Space)
+                </button>
+              </div>
             </div>
-
-            <AnalyticsPanel r={result} />
-
-            <FinalPanel r={result} decision={decision} decisionStatus={decisionStatus} onDecide={onDecide} />
-            <ComparePanel primary={result} />
-            <SessionPanel session={result.session} storageLabel={result.storage.label} />
-          </>
+          </Card>
         )}
 
+        {/* Running Parallel Visualizer */}
+        {phase === "running" && <AgentRunningVisualizer />}
+
+        {/* Active Analysis: Modular Tabbed Layout */}
+        {phase === "done" && result && profile && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            {/* Quick Hero Banner */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/80 px-4 py-3 shadow-xl">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="font-mono text-lg font-black text-white">{result.snapshot.symbol}</span>
+                <span className={`font-mono text-sm font-bold ${result.snapshot.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                  ₹{result.snapshot.price.toLocaleString("en-IN", { minimumFractionDigits: 2 })} ({result.snapshot.changePct >= 0 ? "+" : ""}{result.snapshot.changePct}%)
+                </span>
+                <Badge tone={result.snapshot.mode === "live" ? "green" : "amber"} dot>
+                  {result.snapshot.mode.toUpperCase()}
+                </Badge>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone="sky">ACTION: {result.synthesis.action.label}</Badge>
+                <Badge tone="violet">CONFIDENCE: {result.synthesis.action.confidence}%</Badge>
+                <Badge tone="slate">LATENCY: {result.totalLatencyMs} ms</Badge>
+              </div>
+            </div>
+
+            {/* Segmented Tab Navigation Switcher */}
+            <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-zinc-800 bg-zinc-950/90 p-1.5 shadow-lg">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                      isActive
+                        ? "bg-white text-black shadow-md shadow-white/10"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60"
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab 1: Overview & Decision */}
+            {activeTab === "overview" && (
+              <div className="space-y-4">
+                <FinalPanel
+                  r={result}
+                  decision={decision}
+                  decisionStatus={decisionStatus}
+                  onDecide={onDecide}
+                />
+                <div className="grid gap-4 md:grid-cols-3">
+                  {result.agents.map((a) => (
+                    <AgentCard
+                      key={a.agent}
+                      a={a}
+                      onCitationInspect={(c) => setInspectCitation(c)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Interactive Chart & Technicals */}
+            {activeTab === "chart" && (
+              <div className="space-y-4">
+                <MarketHeader r={result} showChartDefault={true} />
+                <AnalyticsPanel r={result} />
+              </div>
+            )}
+
+            {/* Tab 3: Agent Intelligence */}
+            {activeTab === "agents" && (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  {result.agents.map((a) => (
+                    <AgentCard
+                      key={a.agent}
+                      a={a}
+                      onCitationInspect={(c) => setInspectCitation(c)}
+                    />
+                  ))}
+                </div>
+                <AnalyticsPanel r={result} />
+              </div>
+            )}
+
+            {/* Tab 4: Portfolio & Risk */}
+            {activeTab === "portfolio" && (
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <PortfolioCard profile={profile} r={result} />
+                </div>
+                <AnalyticsPanel r={result} />
+              </div>
+            )}
+
+            {/* Tab 5: Compare & Audit */}
+            {activeTab === "audit" && (
+              <div className="space-y-4">
+                <ComparePanel primary={result} />
+                <SessionPanel
+                  session={result.session}
+                  storageLabel={result.storage.label}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reloaded Last Session Fallback */}
         {phase !== "done" && lastSession && (
           <SessionPanel
             session={lastSession.session}
-            storageLabel={`${lastSession.storage.label} — reloaded from the last session (R8)`}
-            title="Last session log"
+            storageLabel={`${lastSession.storage.label} — reloaded from last session (R8)`}
+            title="Last Persisted Session Record"
           />
         )}
 
-        <footer className="pb-6 pt-2 text-center text-[10px] leading-relaxed text-slate-600">
-          SignalProof is research decision support, not investment advice. No execution, no performance claims, no real
-          financial data. Demo profiles are anonymous; sessions store no PII.
+        <footer className="pt-6 text-center text-xs leading-relaxed text-zinc-500">
+          <p>
+            SignalProof is research decision support, not investment advice. No execution, no price prediction, no guarantees.
+          </p>
+          <p className="mt-0.5 text-[11px] text-zinc-600">
+            Hackverse PS-01 · 3 Parallel Agents · Grounded RAG · Deterministic Concentration Policy
+          </p>
         </footer>
       </main>
 
+      {/* Global Modals */}
       <HowItWorks open={showHow} onClose={() => setShowHow(false)} />
+      <CitationModal
+        citation={inspectCitation}
+        claims={result?.agents.flatMap((a) => a.claims ?? [])}
+        onClose={() => setInspectCitation(null)}
+      />
     </div>
   );
 }

@@ -238,6 +238,7 @@ export async function runAnalysis(
       changePct: round2(snapshot.changePct),
       pointCount: snapshot.points.length,
       closesPreview: snapshot.points.slice(-90).map((p) => p.close),
+      points: snapshot.points.slice(-90),
       liveAttempted: snapshot.liveAttempted,
       liveError: snapshot.liveError,
       cacheHit: snapshot.cacheHit,

@@ -227,6 +227,7 @@ export interface AnalyzeResponse {
     changePct: number;
     pointCount: number;
     closesPreview: number[];
+    points?: OhlcvPoint[];
     liveAttempted: boolean;
     liveError?: string;
     cacheHit?: boolean;

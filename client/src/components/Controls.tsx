@@ -1,11 +1,11 @@
 import type { Profile, Scenario, Stock } from "../types";
 import { Badge, Card } from "./ui";
 
-const SCENARIOS: { id: Scenario; label: string; hint: string }[] = [
-  { id: "normal", label: "Normal", hint: "Primary happy path" },
-  { id: "missing_news", label: "Missing news", hint: "Degraded: news feed unavailable → confidence ≤65" },
-  { id: "missing_filing", label: "Missing filings", hint: "Degraded: corpus unavailable → action capped at WAIT" },
-  { id: "conflict", label: "Conflicting signals", hint: "Prepared conflict → banner + confidence ≤60" },
+const SCENARIOS: { id: Scenario; label: string; icon: string; hint: string }[] = [
+  { id: "normal", label: "Happy Path", icon: "✨", hint: "Full 3-agent parallel synthesis" },
+  { id: "missing_news", label: "Missing News", icon: "📰", hint: "News unavailable → confidence capped ≤65%" },
+  { id: "missing_filing", label: "Missing Filings", icon: "📑", hint: "Filings unavailable → action capped at WAIT" },
+  { id: "conflict", label: "Signal Conflict", icon: "⚡", hint: "Bullish vs Bearish conflict → confidence capped ≤60%" },
 ];
 
 export function Controls({
@@ -34,79 +34,141 @@ export function Controls({
   onRun: () => void;
 }) {
   return (
-    <Card>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2"><Badge tone="sky">{symbol}</Badge><span className="text-xs text-slate-400">research universe</span></div>
+    <Card className="p-5">
+      {/* 1. Ticker Selection Row */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-3.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Research Universe
+          </span>
+          <Badge tone="sky" dot>
+            {symbol}
+          </Badge>
+        </div>
         {lockedSnapshotId && (
-          <Badge tone="violet">snapshot locked · {lockedSnapshotId}</Badge>
+          <Badge tone="violet" dot>
+            LOCKED SNAPSHOT: {lockedSnapshotId}
+          </Badge>
         )}
       </div>
 
-      <div className="mt-3">
-        <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Choose a company</div>
-        <div className="flex flex-wrap gap-1.5">
-          {stocks.map((stock) => (
+      <div className="mt-3.5 flex flex-wrap gap-2">
+        {stocks.map((stock) => {
+          const isSelected = stock.symbol === symbol;
+          return (
             <button
               key={stock.symbol}
               onClick={() => onSymbolChange(stock.symbol)}
-              aria-pressed={stock.symbol === symbol}
-              title={`${stock.name} · ${stock.sector}`}
-              className={`rounded-lg border px-2.5 py-1.5 text-left text-[11px] transition ${stock.symbol === symbol ? "border-sky-500/70 bg-sky-500/15 text-sky-200" : "border-slate-700 bg-slate-950/50 text-slate-400 hover:border-slate-500 hover:text-slate-200"}`}
-            >
-              <span className="font-mono font-semibold">{stock.symbol.replace(".NS", "")}</span><span className="ml-1 text-slate-500">{stock.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {profiles.map((p) => {
-          const active = p.id === profileId;
-          const reliance = p.holdings.find((h) => h.symbol === symbol)?.weightPct ?? 0;
-          return (
-            <button
-              key={p.id}
-              onClick={() => onProfileChange(p.id)}
-              aria-pressed={active}
-              className={`rounded-xl border p-3 text-left transition ${
-                active
-                  ? "border-sky-500/70 bg-sky-500/10 shadow shadow-sky-900/30"
-                  : "border-slate-800 bg-slate-900/40 hover:border-slate-600"
+              aria-pressed={isSelected}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-left text-xs transition-all duration-200 ${
+                isSelected
+                  ? "border-zinc-300 bg-white text-black font-bold shadow-lg shadow-white/10"
+                  : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
               }`}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">{p.name}</span>
-                <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${p.riskTolerance === "conservative" ? "bg-amber-500/15 text-amber-300" : "bg-emerald-500/15 text-emerald-300"}`}>
-                  {p.riskTolerance}
-                </span>
-              </div>
-              <div className="mt-1 font-mono text-[11px] text-slate-400">
-                {symbol}: <span className={reliance >= 40 ? "text-rose-300" : "text-emerald-300"}>{reliance}%</span> · ₹{p.portfolioValueInr.toLocaleString("en-IN")} · {p.horizon}
-              </div>
+              <span className="font-mono">{stock.symbol.replace(".NS", "")}</span>
+              <span className={`text-[10px] ${isSelected ? "text-zinc-700" : "text-zinc-500"}`}>
+                {stock.sector}
+              </span>
             </button>
           );
         })}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <label htmlFor="scenario" className="text-xs text-slate-400">demo scenario</label>
-        <select
-          id="scenario"
-          value={scenario}
-          onChange={(e) => onScenarioChange(e.target.value as Scenario)}
-          className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-200"
-        >
-          {SCENARIOS.map((s) => (
-            <option key={s.id} value={s.id}>{s.label}</option>
-          ))}
-        </select>
-        <span className="text-[11px] text-slate-500">{SCENARIOS.find((s) => s.id === scenario)?.hint}</span>
+      {/* 2. Investor Profiles */}
+      <div className="mt-4">
+        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+          Investor Profile & Behavioral Rules
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {profiles.map((p) => {
+            const isSelected = p.id === profileId;
+            const targetHoldingPct = p.holdings.find((h) => h.symbol === symbol)?.weightPct ?? 0;
+            const isHighConcentration = targetHoldingPct >= 40;
+
+            return (
+              <button
+                key={p.id}
+                onClick={() => onProfileChange(p.id)}
+                aria-pressed={isSelected}
+                className={`relative flex flex-col justify-between rounded-xl border p-4 text-left transition-all duration-200 ${
+                  isSelected
+                    ? "border-sky-500/80 bg-zinc-900/90 shadow-xl shadow-sky-950/20 ring-1 ring-sky-500/40"
+                    : "border-zinc-800/80 bg-zinc-900/40 hover:border-zinc-700"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-zinc-100">{p.name}</span>
+                    <Badge tone={p.riskTolerance === "conservative" ? "amber" : "green"}>
+                      {p.riskTolerance} · {p.horizon}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-400 leading-relaxed line-clamp-2">
+                    {p.description}
+                  </p>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between border-t border-zinc-800/80 pt-2.5 text-xs font-mono">
+                  <span className="text-zinc-400">
+                    Portfolio: <b className="text-zinc-200">₹{(p.portfolioValueInr / 1e5).toFixed(1)} L</b>
+                  </span>
+                  <span className="text-zinc-400">
+                    {symbol.replace(".NS", "")} Weight:{" "}
+                    <b className={isHighConcentration ? "text-rose-400" : "text-emerald-400"}>
+                      {targetHoldingPct}%
+                    </b>
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. Scenario & CTA */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800/80 pt-3.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mr-1">
+            Scenario:
+          </span>
+          {SCENARIOS.map((s) => {
+            const isSelected = scenario === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => onScenarioChange(s.id)}
+                aria-pressed={isSelected}
+                title={s.hint}
+                className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition ${
+                  isSelected
+                    ? "border-zinc-400 bg-zinc-200 text-black shadow-sm"
+                    : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Hero CTA Button */}
         <button
           onClick={onRun}
           disabled={running}
-          className="ml-auto rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400 disabled:cursor-wait disabled:opacity-60"
+          className="cred-button-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs uppercase tracking-wider disabled:cursor-wait disabled:opacity-60"
         >
-          {running ? "Analyzing…" : lockedSnapshotId ? "Re-run on locked snapshot" : "Run analysis"}
+          <span>⚡</span>
+          <span>
+            {running
+              ? "Synthesizing in Parallel…"
+              : lockedSnapshotId
+              ? "Re-Run Locked Snapshot"
+              : "Synthesize Briefing"}
+          </span>
+          <span className="hidden rounded bg-black/10 px-1 py-0.5 text-[9px] font-mono sm:inline">
+            Space
+          </span>
         </button>
       </div>
     </Card>

@@ -1,1 +1,84 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-void: #09090b;
+    --bg-card: #121216;
+    --bg-card-hover: #17171d;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(0, 240, 255, 0.3);
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+  }
+
+  body {
+    background-color: #08080a;
+    background-image: 
+      radial-gradient(ellipse at 50% 0%, rgba(0, 240, 255, 0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 80%, rgba(0, 255, 157, 0.03) 0%, transparent 50%);
+    background-attachment: fixed;
+    color: #f4f4f5;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: -0.01em;
+  }
+
+  /* CRED luxury scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #09090b;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
+}
+
+.cred-card {
+  background: #111115;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 1.25rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cred-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.cred-glass {
+  background: rgba(17, 17, 21, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cred-button-primary {
+  background: #ffffff;
+  color: #000000;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cred-button-primary:hover {
+  background: #f4f4f5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 25px rgba(255, 255, 255, 0.25);
+}
+
+.cred-button-primary:active {
+  transform: translateY(0);
+}
+
+
