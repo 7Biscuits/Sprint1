@@ -1,5 +1,7 @@
 # SignalProof
 
+## 🚀 LIVE DEMO: [HTTPS://SIGNALPROOF-PHI.VERCEL.APP/](https://signalproof-phi.vercel.app/)
+
 **Hackverse: Into the Web — PS-01.** A single-screen, multi-agent equity-research briefing for an eight-stock NSE research universe. It turns one immutable market snapshot into **two different, policy-explained actions** for two saved investor profiles — with every claim cited, every data mode labelled (`LIVE`/`CACHED`), and every failure degraded gracefully instead of hidden.
 
 > "SignalProof turns the same market signal into two safer answers — because it can prove both the evidence and the investor context behind each one."
